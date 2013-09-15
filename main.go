@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"flag"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -59,13 +61,39 @@ func create_workflow(conf Configuration) (int, chan bool) {
 	return len(jobs), finaliser
 }
 
+func print_dotfile(conf Configuration, filename string) {
+	file, err := os.Create(filename)
+	if err != nil {
+		panic(err)
+	}
+	w := bufio.NewWriter(file)
+	defer func() {
+		w.Flush()
+		if err := file.Close(); err != nil {
+			panic(err)
+		}
+	}()
+	fmt.Fprintln(w, "digraph dependencies {")
+	for name, jobConf := range conf.Jobdescs {
+		for _, dependency := range jobConf.Dependencies {
+			fmt.Fprintln(w, "    "+dependency+" -> "+name+";")
+		}
+	}
+	fmt.Fprintln(w, "}")
+}
+
 func main() {
 	var configFile = flag.String("config", "run.toml", "The location of the configuration file")
+	var dryrun = flag.Bool("dryrun", false, "Don't actually run the jobs")
+	var dotfile = flag.String("dot", "diagram.dot", "Print out a dotfile")
 	flag.Parse()
 	conf := LoadConfig(*configFile)
-	totalJobs, finaliser := create_workflow(conf)
-	for i := 0; i < totalJobs; i++ {
-		<-finaliser
-		log.Printf("Job %d/%d finished", i+1, totalJobs)
+	print_dotfile(conf, *dotfile)
+	if !(*dryrun) {
+		totalJobs, finaliser := create_workflow(conf)
+		for i := 0; i < totalJobs; i++ {
+			<-finaliser
+			log.Printf("Job %d/%d finished", i+1, totalJobs)
+		}
 	}
 }
