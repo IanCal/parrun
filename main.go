@@ -5,7 +5,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
-        "strconv"
+	"strconv"
 )
 
 func create_runner(cmd *exec.Cmd, outputname string) func() {
@@ -37,25 +37,25 @@ func create_runner(cmd *exec.Cmd, outputname string) func() {
 	}
 }
 
-func sleeper(time int, name string) func(){
+func sleeper(time int, name string) func() {
 	cmd := exec.Command("sleep", strconv.Itoa(time))
 	return create_runner(cmd, name)
 }
 
 func main() {
-        totalJobs := 3
+	totalJobs := 3
 	c := make(chan bool)
-        j1 := NewJob()
-        j2 := NewJob()
-        j3 := NewJob()
-        j2.AddDependency(j1)
-        j3.AddDependency(j1)
-        j1.AddListener(c)
-        j2.AddListener(c)
-        j3.AddListener(c)
-        j1.SetProcess(sleeper(5, "uno"))
-        j2.SetProcess(sleeper(5, "dos"))
-        j3.SetProcess(sleeper(5, "tres"))
+	j1 := NewJob()
+	j2 := NewJob()
+	j3 := NewJob()
+	j2.AddDependency(j1)
+	j3.AddDependency(j1)
+	j1.AddListener(c)
+	j2.AddListener(c)
+	j3.AddListener(c)
+	j1.SetProcess(sleeper(5, "uno"))
+	j2.SetProcess(sleeper(5, "dos"))
+	j3.SetProcess(sleeper(5, "tres"))
 	for i := 0; i < totalJobs; i++ {
 		<-c
 		log.Printf("Job %d/%d finished", i+1, totalJobs)
