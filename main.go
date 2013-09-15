@@ -1,15 +1,16 @@
 package main
 
 import (
+	"flag"
 	"io"
 	"log"
 	"os"
 	"os/exec"
-	"strconv"
 )
 
-func create_runner(cmd *exec.Cmd, outputname string) func() {
+func create_runner(command_line, outputname string) func() {
 	return func() {
+		cmd := exec.Command("sh", "-c", command_line)
 		fo, err := os.Create("/tmp/" + outputname + ".out")
 		ferr, err := os.Create("/tmp/" + outputname + ".err")
 		defer func() {
@@ -37,27 +38,34 @@ func create_runner(cmd *exec.Cmd, outputname string) func() {
 	}
 }
 
-func sleeper(time int, name string) func() {
-	cmd := exec.Command("sleep", strconv.Itoa(time))
-	return create_runner(cmd, name)
+func create_workflow(conf Configuration) (int, chan bool) {
+	finaliser := make(chan bool)
+	// Create jobs
+	jobs := map[string]*Job{}
+	for name, _ := range conf.Jobdescs {
+		jobs[name] = NewJob()
+	}
+	// Set dependencies
+	for name, jobConf := range conf.Jobdescs {
+		for _, dependency := range jobConf.Dependencies {
+			jobs[name].AddDependency(jobs[dependency])
+		}
+		jobs[name].AddListener(finaliser)
+	}
+	// Set commands
+	for name, jobConf := range conf.Jobdescs {
+		jobs[name].SetProcess(create_runner(jobConf.Command, name))
+	}
+	return len(jobs), finaliser
 }
 
 func main() {
-	totalJobs := 3
-	c := make(chan bool)
-	j1 := NewJob()
-	j2 := NewJob()
-	j3 := NewJob()
-	j2.AddDependency(j1)
-	j3.AddDependency(j1)
-	j1.AddListener(c)
-	j2.AddListener(c)
-	j3.AddListener(c)
-	j1.SetProcess(sleeper(5, "uno"))
-	j2.SetProcess(sleeper(5, "dos"))
-	j3.SetProcess(sleeper(5, "tres"))
+	var configFile = flag.String("config", "run.toml", "The location of the configuration file")
+	flag.Parse()
+	conf := LoadConfig(*configFile)
+	totalJobs, finaliser := create_workflow(conf)
 	for i := 0; i < totalJobs; i++ {
-		<-c
+		<-finaliser
 		log.Printf("Job %d/%d finished", i+1, totalJobs)
 	}
 }

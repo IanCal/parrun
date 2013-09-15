@@ -1,0 +1,12 @@
+[jobdescs]
+    [jobdescs.job1]
+    command = "sleep 5"
+    dependencies = []
+
+    [jobdescs.job2]
+    command = "sleep 5"
+    dependencies = ["job1"]
+
+    [jobdescs.job3]
+    command = "sleep 5"
+    dependencies = ["job1"]
