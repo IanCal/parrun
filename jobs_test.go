@@ -51,7 +51,7 @@ func TestChainedJobs(t *testing.T) {
 	job2.AddDependency(job1)
 	job3.AddDependency(job2)
 	job3.AddDependency(job1)
-        job3.AddListener(success)
+	job3.AddListener(success)
 	job1.SetProcess(func() {})
 	job2.SetProcess(func() {})
 	job3.SetProcess(func() {})

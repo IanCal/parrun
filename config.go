@@ -7,7 +7,7 @@ import (
 
 type JobDesc struct {
 	Dependencies []string
-        Command string
+	Command      string
 }
 
 type Configuration struct {
@@ -17,7 +17,7 @@ type Configuration struct {
 func LoadConfig(filename string) Configuration {
 	var conf Configuration
 	if _, err := toml.DecodeFile(filename, &conf); err != nil {
-                log.Fatal(err)
+		log.Fatal(err)
 	}
-        return conf
+	return conf
 }
