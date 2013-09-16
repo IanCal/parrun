@@ -1,6 +1,7 @@
 package main
 
 import (
+	"math/rand"
 	"testing"
 )
 
@@ -55,5 +56,24 @@ func TestComplexCyclesWithBranching(t *testing.T) {
 	graph := []*Node{a, b, c, d, e, f, g, h, i}
 	if !HasCycle(graph) {
 		t.Errorf("Complex cycles not detected")
+	}
+}
+
+func constructRandomGraph(n int) []*Node {
+	graph := []*Node{}
+	for i := 0; i < n; i++ {
+		graph = append(graph, NewNode())
+	}
+	for i := 0; i < n*5; i++ {
+		graph[rand.Intn(n-1)].AddChild(graph[rand.Intn(n-1)])
+	}
+	return graph
+}
+
+func BenchmarkBigLen(b *testing.B) {
+	big := constructRandomGraph(1000)
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		HasCycle(big)
 	}
 }
