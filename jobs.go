@@ -23,14 +23,21 @@ func (job *Job) AddListener(output chan bool) {
 	job.children = append(job.children, output)
 }
 
-func (job *Job) SetProcess(function func()) {
+func (job *Job) SetProcess(function func() bool) {
 	go func() {
+		dependencyError := false
+		result := false
 		for i := 0; i < len(job.dependencies); i++ {
-			<-job.dependencies[i]
+			if !<-job.dependencies[i] {
+				dependencyError = true
+				break
+			}
 		}
-		function()
+		if !dependencyError {
+			result = function()
+		}
 		for i := 0; i < len(job.children); i++ {
-			job.children[i] <- true
+			job.children[i] <- result
 		}
 	}()
 }
