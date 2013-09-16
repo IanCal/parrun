@@ -10,8 +10,8 @@ import (
 	"os/exec"
 )
 
-func create_runner(command_line, outputname string) func() {
-	return func() {
+func create_runner(command_line, outputname string) func() bool {
+	return func() bool {
 		cmd := exec.Command("sh", "-c", command_line)
 		fo, err := os.Create("/tmp/" + outputname + ".out")
 		ferr, err := os.Create("/tmp/" + outputname + ".err")
@@ -35,8 +35,12 @@ func create_runner(command_line, outputname string) func() {
 			log.Fatal(err)
 		}
 		io.Copy(fo, stdout)
-		io.Copy(fo, stderr)
-		err = cmd.Wait()
+		io.Copy(ferr, stderr)
+		if err := cmd.Wait(); err != nil {
+			log.Fatalf("Error running command '%s' for job '%s', please see the error logs", command_line, outputname)
+			return false
+		}
+		return true
 	}
 }
 
